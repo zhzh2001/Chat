@@ -6,15 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>540</width>
-    <height>330</height>
+    <width>547</width>
+    <height>360</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Server</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>11</x>
@@ -38,7 +38,7 @@
        <item>
         <widget class="QPushButton" name="sendButton">
          <property name="text">
-          <string>Send</string>
+          <string>发送</string>
          </property>
          <property name="default">
           <bool>false</bool>
@@ -51,7 +51,7 @@
        <item>
         <widget class="QPushButton" name="filterButton">
          <property name="text">
-          <string>Filter</string>
+          <string>筛选</string>
          </property>
         </widget>
        </item>
@@ -59,7 +59,7 @@
      </item>
     </layout>
    </widget>
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>11</x>
@@ -72,7 +72,7 @@
      <item>
       <widget class="QLabel" name="statusText">
        <property name="text">
-        <string>&lt;Status&gt;</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;状态&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
       </widget>
      </item>
@@ -81,7 +81,7 @@
      </item>
     </layout>
    </widget>
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>450</x>
@@ -94,7 +94,7 @@
      <item>
       <widget class="QLabel" name="label">
        <property name="text">
-        <string>&lt;Userlist&gt;</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;用户列表&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
       </widget>
      </item>
@@ -107,12 +107,26 @@
      </item>
     </layout>
    </widget>
+   <widget class="QCheckBox" name="checkBox">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>330</y>
+      <width>71</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>允许私信</string>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+   </widget>
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources>
-  <include location="server.qrc"/>
- </resources>
+ <resources/>
  <connections>
   <connection>
    <sender>inputLine</sender>

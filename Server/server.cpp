@@ -1,4 +1,6 @@
 #include "server.h"
+#include "dialog.h"
+#include <iostream>
 
 Server::Server(QWidget *parent)
 	: QMainWindow(parent)
@@ -6,17 +8,23 @@ Server::Server(QWidget *parent)
 	ui.setupUi(this);
 	filterWin = new FilterDialog(this);
 
+    Dialog * x = new Dialog();
+    x->exec();
+    int tport = x->port;
+
 	tcpServer = new QTcpServer(this);
-	if (!tcpServer->listen(QHostAddress::Any, 12234))
+    if (!tcpServer->listen(QHostAddress::Any, tport))
 	{
 		QMessageBox::critical(this, tr("Chat Server"),
-			tr("Unable to start the server: %1.").arg(tcpServer->errorString()));
+            tr("无法启动服务器: %1.").arg(tcpServer->errorString()));
 		close();
 		return;
 	}
 
 	int port = tcpServer->serverPort();
-	ui.statusText->setText(tr("Listening on port: %1").arg(port));
+    if(port != tport)
+        QMessageBox::information(this, tr("Server"), tr("端口 %1 不合法,已重新分配 %2 .").arg(tport).arg(port));
+    ui.statusText->setText(tr("监听端口: %1").arg(port));
 
 	QTimer *timer = new QTimer(this);
 	connect(timer, SIGNAL(timeout()), this, SIGNAL(SEND_UserList()));
@@ -46,7 +54,7 @@ void Server::newConnection()
 	QDataStream out(&block, QIODevice::WriteOnly);
 	out.setVersion(QDataStream::Qt_4_0);
 
-	QString message = "Server: Connected!";
+    QString message = tr("%1 服务器：已连接！").arg(timestamp());
 	out << message;
 	newSocket->write(block);
 }
@@ -93,7 +101,7 @@ void Server::onDisconnect()
 
 		clientConnections.removeAll(socket);
 		socket->deleteLater();
-		updateStatus("Connection terminated. (" + username + ":" + QString::number(socketID) + ")");
+        updateStatus("连接中断：(" + username + ":" + QString::number(socketID) + ")");
 	}
 }
 
@@ -103,6 +111,7 @@ void Server::sendMessage(QString message, QTcpSocket& socket)
 	QDataStream out(&msg, QIODevice::WriteOnly);
 	out.setVersion(QDataStream::Qt_4_0);
 
+    message = timestamp() + " " + message;
 	out << message;
 
 	socket.write(msg);
@@ -114,6 +123,7 @@ void Server::sendToAll(QString message)
 	QDataStream out(&msg, QIODevice::WriteOnly);
 	out.setVersion(QDataStream::Qt_4_0);
 
+    message = timestamp() + " " + message;
 	out << message;
 
 	for (auto i : clientConnections)
@@ -128,6 +138,7 @@ void Server::sendToID(QString message, int ID)
 	QDataStream out(&msg, QIODevice::WriteOnly);
 	out.setVersion(QDataStream::Qt_4_0);
 
+    message = timestamp() + " " + message;
 	out << message;
 
 	for (auto i : clientConnections)
@@ -145,6 +156,8 @@ void Server::getMessage()
 
 	QString message;
 	in >> message;
+    if(message.trimmed()=="")
+        return;
 
 	QStringList messageTokens;
 	messageTokens = message.split(" ", QString::SkipEmptyParts);
@@ -159,7 +172,6 @@ void Server::getMessage()
 	{
 		cmd = COMMAND::USERCMD;
 	}
-
 
 	switch (cmd)
 	{
@@ -204,7 +216,7 @@ void Server::getMessage()
 		QStringList addr = address.split(":", QString::SkipEmptyParts);
 		address = addr.takeLast();
 
-		QString newConnectionMsg = "New connection established. (" + username + ":" + QString::number(ID) + "->" + address + ")";
+        QString newConnectionMsg = "新连接 (" + username + ":" + QString::number(ID) + "->" + address + ")";
 		updateStatus(newConnectionMsg);
 		break;
 	}
@@ -223,7 +235,7 @@ void Server::getMessage()
 	default:
 		std::map<int, QString>::iterator it;
 		it = userList.find(client->socketDescriptor());
-		updateStatus("MSG: (" + it->second + ") " + message);
+        updateStatus("消息: (" + it->second + ") " + message);
 
 		it = userList.find(client->socketDescriptor());
 		QString usr = it->second;
@@ -266,7 +278,6 @@ void Server::doCommand(QString command, int ID)
 	QString message = "Server: ";
 	QStringList commandTokens = command.split(" ", QString::SkipEmptyParts);
 	command = commandTokens.takeFirst();
-
 	if (command == "/hello")
 	{
 		message += "Hi.";
@@ -284,9 +295,9 @@ void Server::doCommand(QString command, int ID)
 			}
 
 			if (rID == 0)
-				message += tr("User \"%1\" not found").arg(recipient);
+                message += tr("用户名 \"%1\" 未找到").arg(recipient);
 			else if (rID == ID)
-				message += "You cannot message yourself.";
+                message += "你不能私信自己";
 			else
 			{
 				QString text;
@@ -299,37 +310,42 @@ void Server::doCommand(QString command, int ID)
 
 				auto user = userList.find(ID);
 
-				message = "* To: " + recipient + ": " + text;
-				QString rMessage = "* From: " + user->second + ": " + text;
-				sendToID(rMessage, rID);
+                if(ui.checkBox->isChecked())
+                {
+                    message = "* 发送到: " + recipient + ": " + text;
+                    QString rMessage = "* 从: " + user->second + ": " + text;
+                    sendToID(rMessage, rID);
 
-				QString status = "PM: (" + user->second + " -> " + recipient + ") " + text;
-				new QListWidgetItem(status, ui.statusList);
+                    QString status = "私信: (" + user->second + " -> " + recipient + ") " + text;
+                    new QListWidgetItem(status, ui.statusList);
+                }
+                else
+                    sendToID("对不起，服务器禁止私信！",ID);
 			}
 		}
 		else
 		{
-			message = "*** Error: Incorrect " + command + " syntax.\n"
-				+ "*** Use: " + command + "[username] [message]";
+            message = "*** 错误: 不正确 " + command + " 语法\n"
+                + "*** 使用: " + command + "[用户名] [消息]";
 		}
 	}
 	else if (command == "/help")
 	{
-		message = "** Help **\n";
+        message = "** 帮助 **\n";
 		message += '**\n';
 
 		// Private messaging
-		message += "** Use /msg, /pm or /whisper to message another user privately.\n";
-		message += "** Syntax: /msg [username] [message]";
-		message += "** Example: /msg Lucky07 Hey, when did you get on?\n";
+        message += "** 使用 /msg, /pm 或 /whisper 来私信另一个用户\n";
+        message += "** 语法: /msg [用户名] [消息]";
+        message += "** 例子: /msg Lucky07 Hey, when did you get on?\n";
 		message += '**\n';
 
 		// Server reply
-		message += "** Use /hello to check for a server reply.";
+        message += "** 使用 /hello 来检查服务器的响应";
 	}
 	else
 	{
-		message += "Invalid command";
+        message += "无效的命令";
 	}
 
 
@@ -375,7 +391,10 @@ void Server::showFilteredResults()
 
 void Server::serverSendAll()
 {
-	QString inputText = "Server: " + ui.inputLine->text();
+    QString tmp = ui.inputLine->text();
+    if (tmp.trimmed() == "")
+        return;
+    QString inputText = "服务器: " + tmp;
 	sendToAll(inputText);
 	updateStatus(inputText);
 	ui.inputLine->clear();
@@ -390,4 +409,22 @@ QString Server::timestamp()
 	time.removeFirst();
 
 	return "[" + time.takeFirst() + "]";
+}
+
+void Server::on_userList_itemDoubleClicked(QListWidgetItem *item)
+{
+    if(QMessageBox::question(this,"询问",tr("是否断开用户%1?").arg(item->text()))==QMessageBox::Yes)
+        for(auto i:userList)
+            if(i.second==item->text())
+            {
+                int id=i.first;
+                for(auto j:clientConnections)
+                    if(j->socketDescriptor()==id)
+                    {
+                        j->abort();
+                        userList.erase(i.first);
+                        sendUserList();
+                        return;
+                    }
+            }
 }

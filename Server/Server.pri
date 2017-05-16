@@ -8,10 +8,13 @@ message("You are running qmake on a generated .pro file. This may not work!")
 
 
 HEADERS += ./server.h \
-    ./filterdialog.h
+    ./filterdialog.h \
+	./dialog.h
 SOURCES += ./filterdialog.cpp \
     ./main.cpp \
-    ./server.cpp
+    ./server.cpp \
+	./dialog.cpp
 FORMS += ./server.ui \
-    ./filterdialog.ui
+    ./filterdialog.ui \
+	./dialog.ui
 RESOURCES += server.qrc

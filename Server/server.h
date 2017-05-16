@@ -31,6 +31,8 @@ private slots:
 	void showFilteredResults();
 	void serverSendAll();
 
+    void on_userList_itemDoubleClicked(QListWidgetItem *item);
+
 private:
 	Ui::ServerClass ui;
 
